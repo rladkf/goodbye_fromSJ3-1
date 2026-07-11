@@ -8,6 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- 구형 문법 번역기 -->
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -22,12 +23,12 @@
 
     // ★ 여기에 본인의 Firebase 설정을 붙여넣으세요! ★
     const firebaseConfig = {
-      apiKey: "AIzaSyAAyncNC3V4fE5fUVVAsT0XkuqkM_ZLc7U",
-      authDomain: "rolling-paper-8691a.firebaseapp.com",
-      projectId: "rolling-paper-8691a",
-      storageBucket: "rolling-paper-8691a.firebasestorage.app",
-      messagingSenderId: "815659205987",
-      appId: "1:815659205987:web:19b27893ac1bc42b10bf56"
+     apiKey: "AIzaSyAAyncNC3V4fE5fUVVAsT0XkuqkM_ZLc7U",
+     authDomain: "rolling-paper-8691a.firebaseapp.com",
+     projectId: "rolling-paper-8691a",
+     storageBucket: "rolling-paper-8691a.firebasestorage.app",
+     messagingSenderId: "815659205987",
+     appId: "1:815659205987:web:19b27893ac1bc42b10bf56"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -263,7 +264,7 @@
             </div>
             <div className="flex items-center space-x-2">
               {isAdmin && (
-                <>
+                <div className="flex items-center space-x-2">
                   <button onClick={() => setIsAdmin(false)} className="hidden sm:flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 px-3 py-2 rounded-full text-sm font-bold shadow-sm transition-colors">
                     <LogOut className="w-3.5 h-3.5 mr-1" /> 관리자 종료
                   </button>
@@ -273,7 +274,7 @@
                   <button onClick={handleFinish} className="flex items-center bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-full text-sm font-bold shadow-sm">
                     <Lock className="w-3.5 h-3.5 mr-1" /> 최종 마감
                   </button>
-                </>
+                </div>
               )}
               <button onClick={handleShare} className="flex items-center bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-full text-sm font-medium shadow-sm">
                 <Share2 className="w-4 h-4 mr-1.5" /> 단톡방 공유
