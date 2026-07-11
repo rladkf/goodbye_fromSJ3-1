@@ -5,13 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>태린이 롤링페이퍼</title>
   
-  <!-- 1. 필요한 외부 기능(Tailwind, React, Firebase)을 인터넷에서 바로 불러옵니다 (설치 X) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
   
-  <!-- Firebase 구버전 호환 스크립트 (HTML 1개 파일에서 쓰기 가장 좋은 방식) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -19,27 +17,24 @@
 <body>
   <div id="root"></div>
 
-  <!-- 2. 여기서부터 작성해주신 코드를 HTML 1개짜리로 변환한 내용입니다 -->
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
     // ★ 여기에 본인의 Firebase 설정을 붙여넣으세요! ★
     const firebaseConfig = {
-     apiKey: "AIzaSyAAyncNC3V4fE5fUVVAsT0XkuqkM_ZLc7U",
-     authDomain: "rolling-paper-8691a.firebaseapp.com",
-     projectId: "rolling-paper-8691a",
-     storageBucket: "rolling-paper-8691a.firebasestorage.app",
-     messagingSenderId: "815659205987",
-     appId: "1:815659205987:web:19b27893ac1bc42b10bf56"
+      apiKey: "AIzaSyAAyncNC3V4fE5fUVVAsT0XkuqkM_ZLc7U",
+      authDomain: "rolling-paper-8691a.firebaseapp.com",
+      projectId: "rolling-paper-8691a",
+      storageBucket: "rolling-paper-8691a.firebasestorage.app",
+      messagingSenderId: "815659205987",
+      appId: "1:815659205987:web:19b27893ac1bc42b10bf56"
     };
 
-    // Firebase 초기화
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
     const appId = 'class-3-1-rolling-paper';
 
-    // 아이콘 직접 만들기 (Lucide 설치 에러 방지용)
     const Pen = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>;
     const Share2 = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>;
     const X = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>;
@@ -92,7 +87,7 @@
         const settingsRef = db.doc(`artifacts/${appId}/public/data/settings/global`);
 
         const unsubscribeMessages = messagesRef.onSnapshot((snapshot) => {
-          const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const msgs = snapshot.docs.map(doc => Object.assign({ id: doc.id }, doc.data()));
           msgs.sort((a, b) => {
             if (a.zIndex && b.zIndex) return a.zIndex - b.zIndex;
             return (a.createdAt || 0) - (b.createdAt || 0);
@@ -175,8 +170,9 @@
         const rect = el.getBoundingClientRect();
         const containerRect = containerRef.current.getBoundingClientRect();
 
-        let currentX = msg.position?.x ?? (rect.left - containerRect.left);
-        let currentY = msg.position?.y ?? (rect.top - containerRect.top);
+        // 최신 문법 기호를 구형 문법으로 수정한 부분
+        let currentX = (msg.position && msg.position.x != null) ? msg.position.x : (rect.left - containerRect.left);
+        let currentY = (msg.position && msg.position.y != null) ? msg.position.y : (rect.top - containerRect.top);
 
         setDraggedItem(msg);
         setDragOffset({ x: clientX - currentX, y: clientY - currentY });
@@ -235,6 +231,13 @@
         setToastMessage(msg);
         setTimeout(() => setToastMessage(''), 3000);
       };
+      
+      // 모달용 색상 계산 수정
+      let modalBg = COLOR_PALETTE[0].bg;
+      if (selectedMessage) {
+        const found = COLOR_PALETTE.find(c => c.id === selectedMessage.colorId);
+        if (found) modalBg = found.bg;
+      }
 
       return (
         <div className="min-h-screen bg-[#FDFBF7] relative overflow-x-hidden flex flex-col" 
@@ -355,7 +358,7 @@
 
           {selectedMessage && !isAdmin && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={() => setSelectedMessage(null)}>
-              <div className={`${COLOR_PALETTE.find(c => c.id === selectedMessage.colorId)?.bg} border w-full max-w-sm rounded-2xl p-8 relative`} onClick={e => e.stopPropagation()}>
+              <div className={`${modalBg} border w-full max-w-sm rounded-2xl p-8 relative`} onClick={e => e.stopPropagation()}>
                 <button onClick={() => setSelectedMessage(null)} className="absolute top-3 right-3"><X className="w-5 h-5 opacity-70" /></button>
                 <div className="mt-4 whitespace-pre-wrap leading-relaxed text-lg">{selectedMessage.content}</div>
                 <div className="mt-8 font-bold">From. {selectedMessage.author}</div>
