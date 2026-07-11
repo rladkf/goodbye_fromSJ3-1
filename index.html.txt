@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>태린이 롤링페이퍼</title>
+  
+  <!-- 1. 필요한 외부 기능(Tailwind, React, Firebase)을 인터넷에서 바로 불러옵니다 (설치 X) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  
+  <!-- Firebase 구버전 호환 스크립트 (HTML 1개 파일에서 쓰기 가장 좋은 방식) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- 2. 여기서부터 작성해주신 코드를 HTML 1개짜리로 변환한 내용입니다 -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ★ 여기에 본인의 Firebase 설정을 붙여넣으세요! ★
+    const firebaseConfig = {
+     apiKey: "AIzaSyAAyncNC3V4fE5fUVVAsT0XkuqkM_ZLc7U",
+     authDomain: "rolling-paper-8691a.firebaseapp.com",
+     projectId: "rolling-paper-8691a",
+     storageBucket: "rolling-paper-8691a.firebasestorage.app",
+     messagingSenderId: "815659205987",
+     appId: "1:815659205987:web:19b27893ac1bc42b10bf56"
+    };
+
+    // Firebase 초기화
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const appId = 'class-3-1-rolling-paper';
+
+    // 아이콘 직접 만들기 (Lucide 설치 에러 방지용)
+    const Pen = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>;
+    const Share2 = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>;
+    const X = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>;
+    const Sparkles = ({className}) => <svg className={className} fill="currentColor" viewBox="0 0 24 24"><path d="M11.5 2L13 8l6 1.5-6 1.5-1.5 6-1.5-6-6-1.5 6-1.5z"/></svg>;
+    const School = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>;
+    const Trash2 = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+    const Lock = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;
+
+    const COLOR_PALETTE = [
+      { id: 'yellow', bg: 'bg-[#FFF9C4]', border: 'border-[#FFF59D]', text: 'text-gray-800' },
+      { id: 'pink', bg: 'bg-[#F8BBD0]', border: 'border-[#F48FB1]', text: 'text-gray-900' },
+      { id: 'blue', bg: 'bg-[#B3E5FC]', border: 'border-[#81D4FA]', text: 'text-gray-900' },
+      { id: 'green', bg: 'bg-[#C8E6C9]', border: 'border-[#A5D6A7]', text: 'text-gray-900' },
+      { id: 'purple', bg: 'bg-[#E1BEE7]', border: 'border-[#CE93D8]', text: 'text-gray-900' },
+      { id: 'white', bg: 'bg-[#FFFFFF]', border: 'border-gray-200', text: 'text-gray-800' },
+    ];
+
+    const ROTATIONS = ['-rotate-2', 'rotate-1', '-rotate-1', 'rotate-2', 'rotate-0', '-rotate-3', 'rotate-3'];
+
+    function App() {
+      const [user, setUser] = useState(null);
+      const [messages, setMessages] = useState([]);
+      const [globalSettings, setGlobalSettings] = useState({ isFinished: false });
+      const [isModalOpen, setIsModalOpen] = useState(false);
+      const [toastMessage, setToastMessage] = useState('');
+      const [selectedMessage, setSelectedMessage] = useState(null);
+      const [author, setAuthor] = useState('');
+      const [content, setContent] = useState('');
+      const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0]);
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [secretClickCount, setSecretClickCount] = useState(0);
+      const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+      const [passwordInput, setPasswordInput] = useState('');
+      const [isAdmin, setIsAdmin] = useState(false);
+      const [draggedItem, setDraggedItem] = useState(null);
+      const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+      const containerRef = useRef(null);
+      const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: '', targetId: null, message: '' });
+
+      useEffect(() => {
+        auth.signInAnonymously().catch(error => console.error("인증 오류:", error));
+        const unsubscribe = auth.onAuthStateChanged(setUser);
+        return () => unsubscribe();
+      }, []);
+
+      useEffect(() => {
+        if (!user) return;
+        
+        const messagesRef = db.collection(`artifacts/${appId}/public/data/rolling_messages`);
+        const settingsRef = db.doc(`artifacts/${appId}/public/data/settings/global`);
+
+        const unsubscribeMessages = messagesRef.onSnapshot((snapshot) => {
+          const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          msgs.sort((a, b) => {
+            if (a.zIndex && b.zIndex) return a.zIndex - b.zIndex;
+            return (a.createdAt || 0) - (b.createdAt || 0);
+          });
+          setMessages(msgs);
+        });
+
+        const unsubscribeSettings = settingsRef.onSnapshot((docSnap) => {
+          if (docSnap.exists) setGlobalSettings(docSnap.data());
+        });
+
+        return () => {
+          unsubscribeMessages();
+          unsubscribeSettings();
+        };
+      }, [user]);
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!user || !author.trim() || !content.trim() || isSubmitting || globalSettings.isFinished) return;
+
+        setIsSubmitting(true);
+        try {
+          await db.collection(`artifacts/${appId}/public/data/rolling_messages`).add({
+            author: author.trim(),
+            content: content.trim(),
+            colorId: selectedColor.id,
+            createdAt: Date.now(),
+            position: null,
+            zIndex: Date.now()
+          });
+          
+          setAuthor('');
+          setContent('');
+          setSelectedColor(COLOR_PALETTE[0]);
+          setIsModalOpen(false);
+          showToast('태린이에게 메시지를 성공적으로 남겼어요! 💌');
+        } catch (error) {
+          showToast('메시지 저장에 실패했습니다.');
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      const handleSecretClick = () => {
+        if (globalSettings.isFinished) return;
+        const newCount = secretClickCount + 1;
+        setSecretClickCount(newCount);
+        if (newCount >= 3) {
+          setIsPasswordModalOpen(true);
+          setSecretClickCount(0);
+        }
+        setTimeout(() => setSecretClickCount(0), 1000);
+      };
+
+      const handlePasswordSubmit = (e) => {
+        e.preventDefault();
+        if (passwordInput === '3495') {
+          setIsAdmin(true);
+          setIsPasswordModalOpen(false);
+          showToast('관리자 모드가 활성화되었습니다.');
+        } else {
+          showToast('비밀번호가 틀렸습니다.');
+        }
+        setPasswordInput('');
+      };
+
+      const handleDeleteMessage = (e, id) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!isAdmin) return;
+        setConfirmDialog({ isOpen: true, type: 'DELETE', targetId: id, message: '정말 삭제하시겠습니까?' });
+      };
+
+      const handlePointerDown = (e, msg) => {
+        if (!isAdmin || e.target.closest('button')) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const el = e.currentTarget;
+        const rect = el.getBoundingClientRect();
+        const containerRect = containerRef.current.getBoundingClientRect();
+
+        let currentX = msg.position?.x ?? (rect.left - containerRect.left);
+        let currentY = msg.position?.y ?? (rect.top - containerRect.top);
+
+        setDraggedItem(msg);
+        setDragOffset({ x: clientX - currentX, y: clientY - currentY });
+        el.style.zIndex = 9999;
+      };
+
+      const handlePointerMove = (e) => {
+        if (!isAdmin || !draggedItem) return;
+        e.preventDefault();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const el = document.getElementById(`msg-${draggedItem.id}`);
+        if (el) {
+          el.style.position = 'absolute';
+          el.style.left = `${clientX - dragOffset.x}px`;
+          el.style.top = `${clientY - dragOffset.y}px`;
+        }
+      };
+
+      const handlePointerUp = async () => {
+        if (!isAdmin || !draggedItem) return;
+        const el = document.getElementById(`msg-${draggedItem.id}`);
+        if (!el) return;
+
+        try {
+          await db.doc(`artifacts/${appId}/public/data/rolling_messages/${draggedItem.id}`).update({
+            position: { x: parseFloat(el.style.left), y: parseFloat(el.style.top) },
+            zIndex: Date.now()
+          });
+        } catch (error) {}
+        setDraggedItem(null);
+      };
+
+      const handleFinish = () => {
+        setConfirmDialog({ isOpen: true, type: 'FINISH', targetId: null, message: '정말 마감하시겠습니까?' });
+      };
+
+      const handleConfirmAction = async () => {
+        if (confirmDialog.type === 'DELETE') {
+          await db.doc(`artifacts/${appId}/public/data/rolling_messages/${confirmDialog.targetId}`).delete();
+          showToast('삭제되었습니다.');
+        } else if (confirmDialog.type === 'FINISH') {
+          await db.doc(`artifacts/${appId}/public/data/settings/global`).set({ isFinished: true });
+          setIsAdmin(false);
+          showToast('마감되었습니다!');
+        }
+        setConfirmDialog({ isOpen: false, type: '', targetId: null, message: '' });
+      };
+
+      const handleShare = () => {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => showToast('링크가 복사되었습니다!'));
+      };
+
+      const showToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(''), 3000);
+      };
+
+      return (
+        <div className="min-h-screen bg-[#FDFBF7] relative overflow-x-hidden flex flex-col" 
+          style={{ fontFamily: "'Gowun Dodum', sans-serif", userSelect: draggedItem ? 'none' : 'auto' }}
+          onMouseMove={handlePointerMove} onMouseUp={handlePointerUp} onTouchMove={handlePointerMove} onTouchEnd={handlePointerUp}
+        >
+          <style>{`
+            @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&display=swap');
+            .title-font { font-family: 'Gowun Batang', serif; }
+            .glass-panel { background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.6); }
+          `}</style>
+
+          <header className="sticky top-0 z-20 glass-panel py-3 px-4 shadow-sm flex items-center justify-between">
+            <div className="flex flex-col">
+              <div className="flex items-center space-x-1 text-xs text-gray-500 mb-0.5">
+                <School className="w-3.5 h-3.5" />
+                <span>인천상정중학교 3학년 1반</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-5 h-5 text-yellow-500" />
+                <h1 className="title-font text-lg md:text-2xl font-bold text-gray-800">태린아, 넌 어딜 가든 빛날 거야 ✨</h1>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              {isAdmin && (
+                <button onClick={handleFinish} className="flex items-center bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-full text-sm font-bold shadow-sm">
+                  <Lock className="w-3.5 h-3.5 mr-1" /> 최종 마감
+                </button>
+              )}
+              <button onClick={handleShare} className="flex items-center bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-full text-sm font-medium shadow-sm">
+                <Share2 className="w-4 h-4 mr-1.5" /> 단톡방 공유
+              </button>
+            </div>
+          </header>
+
+          <main className="flex-1 p-4 md:p-8 z-10 w-full max-w-6xl mx-auto flex flex-col relative min-h-[80vh]" ref={containerRef}>
+            <div className="text-center mb-8 mt-4">
+              <h2 className="text-gray-700 md:text-lg font-medium">우리가 함께했던 <span className="text-pink-500 font-bold bg-pink-50/80 px-1.5 py-0.5 rounded">추억</span>을 기억해줘.</h2>
+              <div className="mt-3 bg-white/70 px-4 py-1.5 rounded-full border border-gray-200/50 shadow-sm inline-block">
+                <span className="text-gray-500 text-sm font-medium">마음 <strong className="text-pink-500 mx-0.5">{messages.length}</strong>개가 모였어요.</span>
+              </div>
+            </div>
+
+            <div className="relative w-full h-full pb-28">
+              <div className="flex flex-wrap gap-4 md:gap-6 w-full justify-center sm:justify-start">
+                {messages.map((msg, index) => {
+                  const colorInfo = COLOR_PALETTE.find(c => c.id === msg.colorId) || COLOR_PALETTE[0];
+                  const isAbsolute = msg.position !== null && msg.position !== undefined;
+                  return (
+                    <div key={msg.id} id={`msg-${msg.id}`}
+                      style={{
+                        position: isAbsolute ? 'absolute' : 'relative', left: isAbsolute ? `${msg.position.x}px` : 'auto', top: isAbsolute ? `${msg.position.y}px` : 'auto', zIndex: msg.zIndex || 1, touchAction: isAdmin ? 'none' : 'auto'
+                      }}
+                      onMouseDown={(e) => handlePointerDown(e, msg)} onTouchStart={(e) => handlePointerDown(e, msg)}
+                      onClick={() => { if (!isAdmin && !draggedItem) setSelectedMessage(msg); }}
+                      className={`${colorInfo.bg} ${colorInfo.border} ${colorInfo.text} ${!isAdmin ? ROTATIONS[index % ROTATIONS.length] : ''} border p-4 rounded-xl shadow-sm flex flex-col w-[44vw] h-[140px] sm:w-[170px] sm:h-[160px] ${isAdmin ? 'cursor-move ring-2 ring-blue-400' : 'cursor-pointer hover:scale-105 hover:z-10 transition-all duration-300'}`}
+                    >
+                      {isAdmin && (
+                        <button onMouseDown={(e) => handleDeleteMessage(e, msg.id)} onTouchStart={(e) => handleDeleteMessage(e, msg.id)} className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 shadow-xl z-50">
+                          <Trash2 className="w-4 h-4 pointer-events-none" />
+                        </button>
+                      )}
+                      <div className="flex-1 whitespace-pre-wrap mt-2 text-[13px] sm:text-[15px] overflow-hidden pointer-events-none" style={{ display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical' }}>
+                        {msg.content}
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-black/5 flex justify-between items-end pointer-events-none">
+                        <span className="font-bold text-sm truncate pr-2">{msg.author}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </main>
+
+          {!globalSettings.isFinished && (
+            <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-8 flex items-center z-20">
+              <div onClick={handleSecretClick} className="w-12 h-14 mr-2 bg-transparent cursor-default" />
+              <button onClick={() => setIsModalOpen(true)} className="px-6 h-14 bg-gray-800 text-white rounded-full flex items-center space-x-2 shadow-xl hover:bg-gray-700">
+                <Pen className="w-5 h-5" /><span>글 남기기</span>
+              </button>
+            </div>
+          )}
+
+          {isModalOpen && !globalSettings.isFinished && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setIsModalOpen(false)}>
+              <div className="bg-white w-full max-w-md rounded-2xl p-6" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold title-font">마음 전하기 ✍️</h3>
+                  <button onClick={() => setIsModalOpen(false)}><X className="w-6 h-6 text-gray-400" /></button>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <input type="text" required placeholder="내 이름 또는 별명" value={author} onChange={e => setAuthor(e.target.value)} className="w-full p-3 rounded-xl border bg-gray-50" />
+                  <textarea required rows={4} maxLength={300} placeholder="응원의 말을 적어주세요!" value={content} onChange={e => setContent(e.target.value)} className="w-full p-3 rounded-xl border bg-gray-50" />
+                  <div className="flex gap-3">
+                    {COLOR_PALETTE.map(c => (
+                      <button key={c.id} type="button" onClick={() => setSelectedColor(c)} className={`w-10 h-10 rounded-full border-2 ${c.bg} ${c.border} ${selectedColor.id === c.id ? 'ring-2 ring-gray-400' : ''}`} />
+                    ))}
+                  </div>
+                  <button type="submit" disabled={isSubmitting || !author || !content} className="w-full py-3.5 bg-gray-800 text-white rounded-xl font-bold">롤링페이퍼에 붙이기</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {isPasswordModalOpen && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+              <div className="bg-white p-6 rounded-2xl w-full max-w-sm">
+                <h3 className="font-bold text-lg mb-4">관리자 모드 (비밀번호: 3495)</h3>
+                <form onSubmit={handlePasswordSubmit}>
+                  <input type="password" value={passwordInput} onChange={e => setPasswordInput(e.target.value)} className="w-full border p-3 rounded-xl mb-4" autoFocus />
+                  <button type="submit" className="w-full bg-gray-800 text-white py-3 rounded-xl font-bold">확인</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {selectedMessage && !isAdmin && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={() => setSelectedMessage(null)}>
+              <div className={`${COLOR_PALETTE.find(c => c.id === selectedMessage.colorId)?.bg} border w-full max-w-sm rounded-2xl p-8 relative`} onClick={e => e.stopPropagation()}>
+                <button onClick={() => setSelectedMessage(null)} className="absolute top-3 right-3"><X className="w-5 h-5 opacity-70" /></button>
+                <div className="mt-4 whitespace-pre-wrap leading-relaxed text-lg">{selectedMessage.content}</div>
+                <div className="mt-8 font-bold">From. {selectedMessage.author}</div>
+              </div>
+            </div>
+          )}
+
+          {confirmDialog.isOpen && (
+            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4">
+              <div className="bg-white p-6 rounded-2xl w-full max-w-sm">
+                <h3 className="font-bold text-lg mb-2">{confirmDialog.message}</h3>
+                <div className="flex space-x-3 mt-6">
+                  <button onClick={() => setConfirmDialog({ isOpen: false })} className="flex-1 bg-gray-100 py-3 rounded-xl font-bold">취소</button>
+                  <button onClick={handleConfirmAction} className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold">확인</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {toastMessage && (
+            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-sm text-center pointer-events-none">
+              <div className="bg-gray-800 text-white px-5 py-3.5 rounded-2xl shadow-xl font-medium">{toastMessage}</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
