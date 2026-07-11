@@ -42,6 +42,7 @@
     const School = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>;
     const Trash2 = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
     const Lock = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;
+    const LogOut = ({className}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>;
 
     const COLOR_PALETTE = [
       { id: 'yellow', bg: 'bg-[#FFF9C4]', border: 'border-[#FFF59D]', text: 'text-gray-800' },
@@ -170,7 +171,6 @@
         const rect = el.getBoundingClientRect();
         const containerRect = containerRef.current.getBoundingClientRect();
 
-        // 최신 문법 기호를 구형 문법으로 수정한 부분
         let currentX = (msg.position && msg.position.x != null) ? msg.position.x : (rect.left - containerRect.left);
         let currentY = (msg.position && msg.position.y != null) ? msg.position.y : (rect.top - containerRect.top);
 
@@ -232,7 +232,6 @@
         setTimeout(() => setToastMessage(''), 3000);
       };
       
-      // 모달용 색상 계산 수정
       let modalBg = COLOR_PALETTE[0].bg;
       if (selectedMessage) {
         const found = COLOR_PALETTE.find(c => c.id === selectedMessage.colorId);
@@ -264,9 +263,17 @@
             </div>
             <div className="flex items-center space-x-2">
               {isAdmin && (
-                <button onClick={handleFinish} className="flex items-center bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-full text-sm font-bold shadow-sm">
-                  <Lock className="w-3.5 h-3.5 mr-1" /> 최종 마감
-                </button>
+                <>
+                  <button onClick={() => setIsAdmin(false)} className="hidden sm:flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 px-3 py-2 rounded-full text-sm font-bold shadow-sm transition-colors">
+                    <LogOut className="w-3.5 h-3.5 mr-1" /> 관리자 종료
+                  </button>
+                  <button onClick={() => setIsAdmin(false)} className="sm:hidden flex items-center bg-gray-100 text-gray-700 border border-gray-200 p-2 rounded-full shadow-sm">
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                  <button onClick={handleFinish} className="flex items-center bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-full text-sm font-bold shadow-sm">
+                    <Lock className="w-3.5 h-3.5 mr-1" /> 최종 마감
+                  </button>
+                </>
               )}
               <button onClick={handleShare} className="flex items-center bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-full text-sm font-medium shadow-sm">
                 <Share2 className="w-4 h-4 mr-1.5" /> 단톡방 공유
@@ -283,19 +290,27 @@
             </div>
 
             <div className="relative w-full h-full pb-28">
-              <div className="flex flex-wrap gap-4 md:gap-6 w-full justify-center sm:justify-start">
+              {/* 메시지들이 예쁘게 정렬되도록 grid 레이아웃 적용 */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6 w-full justify-items-center sm:justify-items-start">
                 {messages.map((msg, index) => {
                   const colorInfo = COLOR_PALETTE.find(c => c.id === msg.colorId) || COLOR_PALETTE[0];
                   const isAbsolute = msg.position !== null && msg.position !== undefined;
                   return (
                     <div key={msg.id} id={`msg-${msg.id}`}
                       style={{
-                        position: isAbsolute ? 'absolute' : 'relative', left: isAbsolute ? `${msg.position.x}px` : 'auto', top: isAbsolute ? `${msg.position.y}px` : 'auto', zIndex: msg.zIndex || 1, touchAction: isAdmin ? 'none' : 'auto'
+                        position: isAbsolute ? 'absolute' : 'relative', 
+                        left: isAbsolute ? `${msg.position.x}px` : 'auto', 
+                        top: isAbsolute ? `${msg.position.y}px` : 'auto', 
+                        zIndex: msg.zIndex || 1, 
+                        touchAction: isAdmin ? 'none' : 'auto'
                       }}
                       onMouseDown={(e) => handlePointerDown(e, msg)} onTouchStart={(e) => handlePointerDown(e, msg)}
                       onClick={() => { if (!isAdmin && !draggedItem) setSelectedMessage(msg); }}
-                      className={`${colorInfo.bg} ${colorInfo.border} ${colorInfo.text} ${!isAdmin ? ROTATIONS[index % ROTATIONS.length] : ''} border p-4 rounded-xl shadow-sm flex flex-col w-[44vw] h-[140px] sm:w-[170px] sm:h-[160px] ${isAdmin ? 'cursor-move ring-2 ring-blue-400' : 'cursor-pointer hover:scale-105 hover:z-10 transition-all duration-300'}`}
+                      className={`${colorInfo.bg} ${colorInfo.border} ${colorInfo.text} ${!isAdmin ? ROTATIONS[index % ROTATIONS.length] : ''} border p-4 rounded-xl shadow-sm flex flex-col w-[44vw] h-[140px] sm:w-[170px] sm:h-[160px] ${isAdmin ? 'cursor-move ring-2 ring-blue-400' : 'cursor-pointer hover:scale-105 hover:z-10 transition-all duration-300'} group`}
                     >
+                      {/* 메모지 상단 반투명 테이프 복구 */}
+                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-10 sm:w-12 h-5 bg-white/40 backdrop-blur-sm shadow-sm rotate-2 rounded-sm transition-transform group-hover:rotate-0"></div>
+
                       {isAdmin && (
                         <button onMouseDown={(e) => handleDeleteMessage(e, msg.id)} onTouchStart={(e) => handleDeleteMessage(e, msg.id)} className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-2 shadow-xl z-50">
                           <Trash2 className="w-4 h-4 pointer-events-none" />
@@ -347,7 +362,7 @@
           {isPasswordModalOpen && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
               <div className="bg-white p-6 rounded-2xl w-full max-w-sm">
-                <h3 className="font-bold text-lg mb-4">관리자 모드</h3>
+                <h3 className="font-bold text-lg mb-4">관리자 모드 (비밀번호: 3495)</h3>
                 <form onSubmit={handlePasswordSubmit}>
                   <input type="password" value={passwordInput} onChange={e => setPasswordInput(e.target.value)} className="w-full border p-3 rounded-xl mb-4" autoFocus />
                   <button type="submit" className="w-full bg-gray-800 text-white py-3 rounded-xl font-bold">확인</button>
