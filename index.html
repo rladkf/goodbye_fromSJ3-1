@@ -347,7 +347,7 @@
           {isPasswordModalOpen && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
               <div className="bg-white p-6 rounded-2xl w-full max-w-sm">
-                <h3 className="font-bold text-lg mb-4">관리자 모드 (비밀번호: 3495)</h3>
+                <h3 className="font-bold text-lg mb-4">관리자 모드</h3>
                 <form onSubmit={handlePasswordSubmit}>
                   <input type="password" value={passwordInput} onChange={e => setPasswordInput(e.target.value)} className="w-full border p-3 rounded-xl mb-4" autoFocus />
                   <button type="submit" className="w-full bg-gray-800 text-white py-3 rounded-xl font-bold">확인</button>
